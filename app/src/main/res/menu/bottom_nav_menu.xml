@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@android:drawable/ic_menu_compass"
+        android:title="Kezdőlap" />
+    <item
+        android:id="@+id/nav_service"
+        android:icon="@android:drawable/ic_menu_add"
+        android:title="+ Szerviz" />
+    <item
+        android:id="@+id/nav_car"
+        android:icon="@android:drawable/ic_menu_agenda"
+        android:title="+ Autó" />
+</menu>
