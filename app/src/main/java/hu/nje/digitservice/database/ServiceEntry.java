@@ -36,6 +36,8 @@ public class ServiceEntry {
         this.cost = cost;
     }
 
+    public long getCarId() { return this.carId; };
+
     public long getId() {
         return id;
     }
