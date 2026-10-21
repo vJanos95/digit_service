@@ -19,12 +19,16 @@ public class CarAdapter extends RecyclerView.Adapter<CarAdapter.CarViewHolder> {
     public interface OnDeleteClickListener {
         void onDeleteClick(Car car);
     }
-
+    public interface OnCarClickListener {
+        void onCarClick(Car car);
+    }
     private final List<Car> cars = new ArrayList<>();
     private final OnDeleteClickListener deleteClickListener;
+    private final OnCarClickListener carClickListener;
 
-    public CarAdapter(OnDeleteClickListener deleteClickListener) {
+    public CarAdapter(OnDeleteClickListener deleteClickListener, OnCarClickListener carClickListener) {
         this.deleteClickListener = deleteClickListener;
+        this.carClickListener = carClickListener;
     }
 
     @NonNull
@@ -52,6 +56,9 @@ public class CarAdapter extends RecyclerView.Adapter<CarAdapter.CarViewHolder> {
 
         holder.deleteButton.setOnClickListener(v ->
                 deleteClickListener.onDeleteClick(car)
+        );
+        holder.itemView.setOnClickListener(
+                v -> carClickListener.onCarClick(car)
         );
     }
 

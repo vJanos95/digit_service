@@ -77,7 +77,10 @@ public class CarListFragment extends Fragment {
         recyclerView = view.findViewById(R.id.car_recycler_view);
         emptyMessage = view.findViewById(R.id.car_list_empty);
 
-        adapter = new CarAdapter(this::confirmDelete);
+        adapter = new CarAdapter(
+                this::confirmDelete,
+                car -> ((MainActivity) requireActivity())
+                        .openCarServices(car));
 
         recyclerView.setLayoutManager(
                 new LinearLayoutManager(requireContext())
