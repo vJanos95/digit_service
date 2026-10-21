@@ -22,6 +22,9 @@ public class CarAdapter extends RecyclerView.Adapter<CarAdapter.CarViewHolder> {
     public interface OnCarClickListener {
         void onCarClick(Car car);
     }
+    public interface OnDeleteClickListener {
+        void onDeleteClick(Car car);
+    }
 
     // a kiválasztott kártya színei (itt egy helyen átírhatók)
     private static final int SELECTED_BACKGROUND = Color.parseColor("#1B4FC4");
