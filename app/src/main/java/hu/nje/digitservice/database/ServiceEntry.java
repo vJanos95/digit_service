@@ -2,7 +2,9 @@ package hu.nje.digitservice.database;
 
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
+import androidx.room.Index;
 
 
 @Entity(tableName = "service_entries",
@@ -11,7 +13,10 @@ import androidx.room.PrimaryKey;
                 parentColumns = "id",
                 childColumns = "carId",
                 onDelete = ForeignKey.CASCADE
-        ))
+
+        ),
+        indices = {@Index("carId")}
+        )
 public class ServiceEntry {
     @PrimaryKey(autoGenerate = true)
     private long id;
@@ -21,6 +26,8 @@ public class ServiceEntry {
     private long mileage;
     private String serviceDate;
     private long cost;
+
+
 
     public ServiceEntry(long carId,
                         String entryName,
@@ -35,6 +42,10 @@ public class ServiceEntry {
         this.serviceDate = serviceDate;
         this.cost = cost;
     }
+
+
+    public long getCarId() {return carId;}
+
 
     public long getId() {
         return id;
