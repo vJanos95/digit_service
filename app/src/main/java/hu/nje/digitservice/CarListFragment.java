@@ -1,22 +1,19 @@
 package hu.nje.digitservice;
 
+import android.app.Activity;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,159 +21,156 @@ import java.util.concurrent.Executors;
 import hu.nje.digitservice.database.AppDatabase;
 import hu.nje.digitservice.database.Car;
 import hu.nje.digitservice.database.DatabaseProvider;
+import hu.nje.digitservice.database.ServiceEntry;
 
 public class CarListFragment extends Fragment {
 
-    private static final String TAG = "CarListFragment";
+    // Tesztelés: ha true, és az adatbázis üres, beír 2 autót és pár szervizt.
+    // Amíg nincs "Új autó" képernyő, ezzel látod a Kezdőlapot. Élesben legyen false!
+    private static final boolean SEED_TEST_DATA = true;
+
+    // háttérszál az adatbázis-műveletekhez
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private AppDatabase db;
-    private CarAdapter adapter;
-    private RecyclerView recyclerView;
-    private TextView emptyMessage;
+    private CarAdapter carAdapter;
+    private ServiceAdapter serviceAdapter;
+    private TextView summaryName;
+    private TextView summaryDetails;
 
-    private final ExecutorService databaseExecutor =
-            Executors.newSingleThreadExecutor();
-
-    private final Handler mainHandler =
-            new Handler(Looper.getMainLooper());
+    private long selectedCarId = -1;
 
     public CarListFragment() {
         // Required empty public constructor
     }
 
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        db = DatabaseProvider.getDatabase(
-                requireContext().getApplicationContext()
-        );
-    }
-
-    @Nullable
-    @Override
-    public View onCreateView(
-            @NonNull LayoutInflater inflater,
-            @Nullable ViewGroup container,
-            @Nullable Bundle savedInstanceState) {
-
-        return inflater.inflate(
-                R.layout.fragment_car_list,
-                container,
-                false
-        );
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_car_list, container, false);
     }
 
     @Override
-    public void onViewCreated(
-            @NonNull View view,
-            @Nullable Bundle savedInstanceState) {
-
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        recyclerView = view.findViewById(R.id.car_recycler_view);
-        emptyMessage = view.findViewById(R.id.car_list_empty);
+        db = DatabaseProvider.getDatabase(requireContext());
 
-        adapter = new CarAdapter(this::confirmDelete);
+        summaryName = view.findViewById(R.id.summary_name);
+        summaryDetails = view.findViewById(R.id.summary_details);
+        RecyclerView carRecycler = view.findViewById(R.id.car_recycler);
+        RecyclerView serviceRecycler = view.findViewById(R.id.service_recycler);
 
-        recyclerView.setLayoutManager(
-                new LinearLayoutManager(requireContext())
-        );
-        recyclerView.setAdapter(adapter);
-
-        loadCars();
+        carAdapter = new CarAdapter(this::showCar);
+        serviceAdapter = new ServiceAdapter();
+        carRecycler.setAdapter(carAdapter);
+        serviceRecycler.setAdapter(serviceAdapter);
     }
 
-    private void confirmDelete(Car car) {
-        if (!isAdded()) {
-            return;
-        }
-
-        String carName = car.getManufacturer() + " " + car.getModel();
-
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Autó törlése?")
-                .setMessage(
-                        "Biztosan törölni akarod a(z) "
-                                + carName + "autót?"
-                                + "\n\nA hozzá tartozó szervíz rekordok is törlésre kerülnek."
-                )
-                .setNegativeButton("Mégse", (dialog, which) -> {
-                })
-                .setPositiveButton("Törlés", (dialog, which) ->
-                        deleteCar(car)
-                )
-                .show();
-    }
-
-    private void deleteCar(Car car) {
-        databaseExecutor.execute(() -> {
-            try {
-                db.carDao().delete(car);
-
-                // Reload the list after deletion.
-                loadCars();
-
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to delete car", e);
-
-                mainHandler.post(() -> {
-                    if (isAdded()) {
-                        Toast.makeText(
-                                requireContext(),
-                                "Could not delete the car.",
-                                Toast.LENGTH_SHORT
-                        ).show();
-                    }
-                });
-            }
-        });
-    }
-
-    private void loadCars() {
-        databaseExecutor.execute(() -> {
-            try {
-                List<Car> cars = db.carDao().getAll();
-
-                mainHandler.post(() -> {
-                    if (!isAdded()
-                            || recyclerView == null
-                            || emptyMessage == null
-                            || adapter == null) {
-                        return;
-                    }
-
-                    adapter.setCars(cars);
-
-                    boolean isEmpty = cars.isEmpty();
-
-                    emptyMessage.setVisibility(
-                            isEmpty ? View.VISIBLE : View.GONE
-                    );
-
-                    recyclerView.setVisibility(
-                            isEmpty ? View.GONE : View.VISIBLE
-                    );
-                });
-
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to load cars from database", e);
-            }
-        });
-    }
-
+    // Minden alkalommal frissítünk, amikor a képernyő előtérbe kerül
+    // (pl. ha egy új autót vettünk fel másik képernyőn).
     @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-
-        recyclerView = null;
-        emptyMessage = null;
-        adapter = null;
+    public void onResume() {
+        super.onResume();
+        loadCars();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        databaseExecutor.shutdown();
+        executor.shutdown();
+    }
+
+    // Autók betöltése az adatbázisból (háttérszálon)
+    private void loadCars() {
+        executor.execute(() -> {
+            if (SEED_TEST_DATA) {
+                seedIfEmpty();
+            }
+
+            List<Car> cars = db.carDao().getAll();
+
+            runOnUi(() -> {
+                carAdapter.setCars(cars);
+
+                if (cars.isEmpty()) {
+                    showEmpty();
+                    return;
+                }
+
+                // ha volt kiválasztott autó, az marad, különben az első
+                Car toSelect = cars.get(0);
+                for (Car car : cars) {
+                    if (car.getId() == selectedCarId) {
+                        toSelect = car;
+                        break;
+                    }
+                }
+                showCar(toSelect);
+            });
+        });
+    }
+
+    // Egy autó kiválasztása: összegző kártya + szervizlista frissítése
+    private void showCar(Car car) {
+        selectedCarId = car.getId();
+        carAdapter.setSelectedCarId(car.getId());
+        summaryName.setText(car.getManufacturer() + " " + car.getModel());
+
+        executor.execute(() -> {
+            List<ServiceEntry> entries = new ArrayList<>(
+                    db.serviceEntryDao().getServiceEntriesByCarId(car.getId()));
+
+            // legnagyobb km elöl (ez az újabb szerviz)
+            Collections.sort(entries,
+                    (a, b) -> Long.compare(b.getMileage(), a.getMileage()));
+
+            long maxKm = entries.isEmpty() ? 0 : entries.get(0).getMileage();
+
+            runOnUi(() -> {
+                if (entries.isEmpty()) {
+                    summaryDetails.setText(car.getLicensePlate() + " • még nincs szerviz");
+                } else {
+                    summaryDetails.setText(car.getLicensePlate() + " • " + maxKm + " km");
+                }
+                serviceAdapter.setEntries(entries);
+            });
+        });
+    }
+
+    // Üres adatbázis: nincs autó
+    private void showEmpty() {
+        summaryName.setText("Nincs kiválasztott autó");
+        summaryDetails.setText("Még nincs autó felvéve");
+        serviceAdapter.setEntries(new ArrayList<>());
+    }
+
+    // A UI-t csak a főszálon szabad módosítani
+    private void runOnUi(Runnable action) {
+        Activity activity = getActivity();
+        if (activity == null || !isAdded()) {
+            return;
+        }
+        activity.runOnUiThread(action);
+    }
+
+    // ---- Csak tesztelésre: ha üres az adatbázis, beír pár adatot ----
+
+    private void seedIfEmpty() {
+        if (!db.carDao().getAll().isEmpty()) {
+            return;
+        }
+
+        long laguna = db.carDao().insert(new Car("Renault", "Laguna II", "DOK-987", 2004));
+        long peugeot = db.carDao().insert(new Car("Peugeot", "206", "ABC-123", 2002));
+
+        db.serviceEntryDao().insert(new ServiceEntry(laguna,
+                "Motorolaj & Szűrők cseréje", "", 182000, "2026.09.12.", 42000));
+        db.serviceEntryDao().insert(new ServiceEntry(laguna,
+                "Vezérlés készlet csere", "", 165000, "2025.11.04.", 135000));
+        db.serviceEntryDao().insert(new ServiceEntry(laguna,
+                "Fékfolyadék & Első fékek", "", 158000, "2025.03.18.", 68000));
+        db.serviceEntryDao().insert(new ServiceEntry(peugeot,
+                "Olajcsere", "", 142500, "2026.05.20.", 28000));
     }
 }
