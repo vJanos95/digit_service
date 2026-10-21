@@ -8,6 +8,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import hu.nje.digitservice.database.Car;
+
 /**
  * A simple {@link Fragment} subclass.
  * Use the {@link ServiceListFragment#newInstance} factory method to
@@ -15,17 +17,10 @@ import android.view.ViewGroup;
  */
 public class ServiceListFragment extends Fragment {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+    private long carId;
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
-
-    public ServiceListFragment() {
-        // Required empty public constructor
+    public ServiceListFragment(Car car) {
+        this.carId = car.getId();
     }
 
     /**
@@ -37,22 +32,14 @@ public class ServiceListFragment extends Fragment {
      * @return A new instance of fragment ServiceListFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static ServiceListFragment newInstance(String param1, String param2) {
-        ServiceListFragment fragment = new ServiceListFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
+    public static ServiceListFragment newInstance(Car car) {
+        ServiceListFragment fragment = new ServiceListFragment(car);
         return fragment;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
     }
 
     @Override
