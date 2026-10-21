@@ -16,6 +16,7 @@ public class MainActivity extends AppCompatActivity {
 
         BottomNavigationView nav = findViewById(R.id.bottom_nav);
 
+
         nav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
 
@@ -23,10 +24,12 @@ public class MainActivity extends AppCompatActivity {
                 showFragment(new CarListFragment());
             } else if (id == R.id.nav_service) {
                 showFragment(new ServiceEntryFragment());
+            } else if (id == R.id.nav_car) {
+                showFragment(new CarEntryFragment());
             } else {
-                // ideiglenes: ide jön majd az "Új autó" képernyő
-                showFragment(new ServiceListFragment());
+                return false;
             }
+
             return true;
         });
 
