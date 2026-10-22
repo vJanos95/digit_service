@@ -27,7 +27,7 @@ public class CarListFragment extends Fragment {
 
     // Tesztelés: ha true, és az adatbázis üres, beír 2 autót és pár szervizt.
     // Amíg nincs "Új autó" képernyő, ezzel látod a Kezdőlapot. Élesben legyen false!
-    private static final boolean SEED_TEST_DATA = true;
+    private static final boolean SEED_TEST_DATA = false;
 
     // háttérszál az adatbázis-műveletekhez
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
