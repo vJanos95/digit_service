@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_home"
-        android:icon="@android:drawable/ic_menu_compass"
-        android:title="Kezdőlap" />
+        android:icon="@drawable/ic_nav_home"
+        android:title="Garázs" />
     <item
         android:id="@+id/nav_service"
-        android:icon="@android:drawable/ic_menu_add"
-        android:title="Új Szerviz" />
+        android:icon="@drawable/ic_nav_service"
+        android:title="+ Új szerviz" />
     <item
-        android:id="@+id/nav_car"
-        android:icon="@android:drawable/ic_menu_agenda"
-        android:title="Új Autó" />
+        android:id="@+id/nav_settings"
+        android:icon="@drawable/ic_nav_settings"
+        android:title="Beállítások" />
 </menu>

@@ -1,7 +1,5 @@
 package hu.nje.digitservice;
 
-import android.content.res.ColorStateList;
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +12,7 @@ import com.google.android.material.card.MaterialCardView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import hu.nje.digitservice.database.Car;
 
@@ -22,15 +21,8 @@ public class CarAdapter extends RecyclerView.Adapter<CarAdapter.CarViewHolder> {
     public interface OnCarClickListener {
         void onCarClick(Car car);
     }
-    public interface OnDeleteClickListener {
-        void onDeleteClick(Car car);
-    }
 
-    // a kiválasztott kártya színei (itt egy helyen átírhatók)
-    private static final int SELECTED_BACKGROUND = Color.parseColor("#1B4FC4");
-    private static final int SELECTED_TEXT = Color.WHITE;
-
-    private final List<Car> cars = new ArrayList<>();
+    private final List<CarItem> items = new ArrayList<>();
     private final OnCarClickListener listener;
     private long selectedCarId = -1;
 
@@ -38,9 +30,9 @@ public class CarAdapter extends RecyclerView.Adapter<CarAdapter.CarViewHolder> {
         this.listener = listener;
     }
 
-    public void setCars(List<Car> newCars) {
-        cars.clear();
-        cars.addAll(newCars);
+    public void setItems(List<CarItem> newItems) {
+        items.clear();
+        items.addAll(newItems);
         notifyDataSetChanged();
     }
 
@@ -59,54 +51,47 @@ public class CarAdapter extends RecyclerView.Adapter<CarAdapter.CarViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull CarViewHolder holder, int position) {
-        Car car = cars.get(position);
+        CarItem item = items.get(position);
+        Car car = item.car;
 
         holder.name.setText(car.getManufacturer() + " " + car.getModel());
         holder.plate.setText(car.getLicensePlate());
-        holder.year.setText(car.getProductionYear() + "-es évjárat");
 
-        boolean selected = car.getId() == selectedCarId;
-        if (selected) {
-            // kiválasztott kártya: kék kitöltés + fehér szöveg
-            holder.card.setCardBackgroundColor(SELECTED_BACKGROUND);
-            holder.name.setTextColor(SELECTED_TEXT);
-            holder.plate.setTextColor(SELECTED_TEXT);
-            holder.year.setTextColor(SELECTED_TEXT);
+        if (item.hasService) {
+            holder.km.setText(String.format(Locale.getDefault(), "%,d km", item.maxKm));
+            holder.lastService.setText(item.lastServiceDate);
         } else {
-            // a többi kártya visszakapja az eredeti színeit
-            holder.card.setCardBackgroundColor(holder.defaultCardColor);
-            holder.name.setTextColor(holder.defaultTextColors);
-            holder.plate.setTextColor(holder.defaultTextColors);
-            holder.year.setTextColor(holder.defaultTextColors);
+            holder.km.setText("Még nincs szerviz");
+            holder.lastService.setText("");
         }
+
+        // a kiválasztott csempe kap egy színes keretet
+        boolean selected = car.getId() == selectedCarId;
+        float density = holder.card.getResources().getDisplayMetrics().density;
+        holder.card.setStrokeWidth(selected ? (int) (3 * density) : 0);
 
         holder.card.setOnClickListener(v -> listener.onCarClick(car));
     }
 
     @Override
     public int getItemCount() {
-        return cars.size();
+        return items.size();
     }
 
     static class CarViewHolder extends RecyclerView.ViewHolder {
         final MaterialCardView card;
         final TextView name;
         final TextView plate;
-        final TextView year;
-
-        // az eredeti színek, hogy vissza tudjuk állítani őket
-        final ColorStateList defaultCardColor;
-        final ColorStateList defaultTextColors;
+        final TextView km;
+        final TextView lastService;
 
         CarViewHolder(@NonNull View itemView) {
             super(itemView);
             card = (MaterialCardView) itemView;
             name = itemView.findViewById(R.id.car_name);
             plate = itemView.findViewById(R.id.car_plate);
-            year = itemView.findViewById(R.id.car_year);
-
-            defaultCardColor = card.getCardBackgroundColor();
-            defaultTextColors = name.getTextColors();
+            km = itemView.findViewById(R.id.car_km);
+            lastService = itemView.findViewById(R.id.car_last_service);
         }
     }
 }
