@@ -8,16 +8,18 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class ServiceEntryFragment extends Fragment {
     private EditText szerviz;
     private EditText kilometer;
     private EditText osszeg;
     private Button mentes;
+    private  Button vissza;
 
 
     public ServiceEntryFragment() {
@@ -37,10 +39,12 @@ public class ServiceEntryFragment extends Fragment {
         kilometer = view.findViewById(R.id.KmAllas);
         osszeg = view.findViewById(R.id.KoltsegOsszeg);
         mentes = view.findViewById(R.id.BtnMentes);
+        vissza = view.findViewById(R.id.btnAutoValtas);
         mentes.setOnClickListener(v -> {
             String SzervizFajta = szerviz.getText().toString().trim();
             String KmAllas = kilometer.getText().toString().trim();
             String KoltsegOsszeg = osszeg.getText().toString().trim();
+
 
             if (SzervizFajta.isEmpty()){
                 szerviz.setError("Add meg a Szerviz fajtáját");
@@ -52,9 +56,16 @@ public class ServiceEntryFragment extends Fragment {
             }
 
 
+
             Toast.makeText(requireContext(),"Szerviz: " + SzervizFajta + ", " + KmAllas + " km, " + KoltsegOsszeg + " FT", Toast.LENGTH_SHORT).show();
 
         });
+        vissza.setOnClickListener(v -> {
+
+            BottomNavigationView nav = requireActivity().findViewById(R.id.bottom_nav);
+            nav.setSelectedItemId(R.id.nav_home);
+        });
+
 
 
 
