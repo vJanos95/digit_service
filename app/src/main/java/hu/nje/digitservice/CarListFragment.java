@@ -11,6 +11,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -35,6 +36,8 @@ public class CarListFragment extends Fragment {
     // háttérszál az adatbázis-műveletekhez
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
+    private SelectedCarViewModel carVm;
+
     private AppDatabase db;
     private CarAdapter carAdapter;
     private ServiceAdapter serviceAdapter;
@@ -58,6 +61,12 @@ public class CarListFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         db = DatabaseProvider.getDatabase(requireContext());
+
+        carVm = new ViewModelProvider(requireActivity()).get(SelectedCarViewModel.class);
+        Car current = carVm.getSelectedCar().getValue();
+        if (current != null) {
+            selectedCarId = current.getId();
+        }
 
         emptyText = view.findViewById(R.id.car_empty);
         RecyclerView carRecycler = view.findViewById(R.id.car_recycler);
@@ -117,6 +126,7 @@ public class CarListFragment extends Fragment {
                 if (items.isEmpty()) {
                     emptyText.setVisibility(View.VISIBLE);
                     serviceAdapter.setEntries(new ArrayList<>());
+                    carVm.select( null);
                     return;
                 }
                 emptyText.setVisibility(View.GONE);
@@ -142,6 +152,12 @@ public class CarListFragment extends Fragment {
     // Kiválasztott autó: keret a csempén + szervizlista frissítése
     private void showServices(long carId) {
         selectedCarId = carId;
+        for (CarItem item : currentItems) {
+            if (item.car.getId() == carId) {
+                carVm.select(item.car);
+                break;
+            }
+        }
         carAdapter.setSelectedCarId(carId);
 
         executor.execute(() -> {
