@@ -62,10 +62,14 @@ public class MainActivity extends AppCompatActivity {
         new MaterialAlertDialogBuilder(this)
                 .setTitle("Jármű kezelése")
                 .setItems(options, (dialog, which) -> {
+
+                    //ÚJ autó rész
                     if (which == 0) {
-                        // TODO: ide jön az "Új autó" képernyő, ha elkészül
-                        Toast.makeText(this, "Az új autó képernyő még készül",
-                                Toast.LENGTH_SHORT).show();
+                        getSupportFragmentManager()
+                                .beginTransaction()
+                                .replace(R.id.fragment_container, new NewCarFragment())
+                                .addToBackStack(null)
+                                .commit();
                     } else if (which == 1) {
                         deleteSelectedCar();
                     } else {
