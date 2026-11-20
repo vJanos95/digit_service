@@ -21,7 +21,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.HashMap;
+import java.util.Map;
 
+import hu.nje.digitservice.database.ServiceImage;
 import hu.nje.digitservice.database.AppDatabase;
 import hu.nje.digitservice.database.Car;
 import hu.nje.digitservice.database.DatabaseProvider;
@@ -125,7 +128,10 @@ public class CarListFragment extends Fragment {
 
                 if (items.isEmpty()) {
                     emptyText.setVisibility(View.VISIBLE);
-                    serviceAdapter.setEntries(new ArrayList<>());
+                    serviceAdapter.setEntries(
+                            new ArrayList<>(),
+                            Collections.emptyMap()
+                    );
                     carVm.select( null);
                     return;
                 }
@@ -150,25 +156,48 @@ public class CarListFragment extends Fragment {
     }
 
     // Kiválasztott autó: keret a csempén + szervizlista frissítése
+
     private void showServices(long carId) {
         selectedCarId = carId;
+
         for (CarItem item : currentItems) {
             if (item.car.getId() == carId) {
                 carVm.select(item.car);
                 break;
             }
         }
+
         carAdapter.setSelectedCarId(carId);
 
         executor.execute(() -> {
             List<ServiceEntry> entries = new ArrayList<>(
-                    db.serviceEntryDao().getServiceEntriesByCarId(carId));
+                    db.serviceEntryDao().getServiceEntriesByCarId(carId)
+            );
 
-            // legnagyobb km elöl (ez az újabb szerviz)
-            Collections.sort(entries,
-                    (a, b) -> Long.compare(b.getMileage(), a.getMileage()));
+            // Legnagyobb kilométeróra-állás elöl.
+            Collections.sort(
+                    entries,
+                    (a, b) -> Long.compare(
+                            b.getMileage(),
+                            a.getMileage()
+                    )
+            );
 
-            runOnUi(() -> serviceAdapter.setEntries(entries));
+            // Az egyes szervizbejegyzésekhez tartozó képek lekérése.
+            Map<Long, List<ServiceImage>> imagesByService =
+                    new HashMap<>();
+
+            for (ServiceEntry entry : entries) {
+                List<ServiceImage> images =
+                        db.serviceImageDao()
+                                .getServiceImagesByServiceId(entry.getId());
+
+                imagesByService.put(entry.getId(), images);
+            }
+
+            runOnUi(() ->
+                    serviceAdapter.setEntries(entries, imagesByService)
+            );
         });
     }
 

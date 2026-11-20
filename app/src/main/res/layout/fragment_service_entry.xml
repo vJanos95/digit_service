@@ -224,6 +224,8 @@
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Csatolt fájl (csak akkor látszik, ha van csatolmány) -->
+
+        <!-- Csatolt képek előnézete -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/llAttached"
             android:layout_width="match_parent"
@@ -239,24 +241,34 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center"
                 android:orientation="vertical"
-                android:padding="24dp">
-
-                <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:contentDescription="Csatolt fájl"
-                    android:src="@android:drawable/ic_menu_agenda" />
+                android:padding="12dp">
 
                 <TextView
-                    android:id="@+id/tvAttachedName"
+                    android:id="@+id/tvAttachedCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:text="Csatolt képek (0)"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold" />
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="szamla.pdf"
-                    android:textColor="#FFFFFF" />
+                    android:fillViewport="false"
+                    android:scrollbars="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/attachedImagesContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal" />
+
+                </HorizontalScrollView>
+
             </LinearLayout>
+
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Mentés -->
