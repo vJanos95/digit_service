@@ -5,4 +5,8 @@
         name="camera_images"
         path="camera/" />
 
+    <cache-path
+        name="pdf_exports"
+        path="exports/" />
+
 </paths>
