@@ -2,11 +2,13 @@ package hu.nje.digitservice;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.pdf.PdfDocument;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.FutureTarget;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -14,6 +16,7 @@ import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutionException;
 
 import hu.nje.digitservice.database.AppDatabase;
 import hu.nje.digitservice.database.Car;
@@ -24,7 +27,6 @@ public class PdfExporter {
 
     private static final int PAGE_WIDTH = 595;
     private static final int PAGE_HEIGHT = 842;
-
     private static final int MARGIN = 40;
 
     public static File generate(
@@ -76,22 +78,13 @@ public class PdfExporter {
             totalCost += entry.getCost();
         }
 
-        canvas.drawText(
-                "DigitService",
-                MARGIN,
-                y,
-                titlePaint
-        );
-
+        canvas.drawText("DigitService", MARGIN, y, titlePaint);
         y += 30;
 
         canvas.drawText(
                 "Jármű szerviztörténete",
-                MARGIN,
-                y,
-                boldPaint
+                MARGIN, y, boldPaint
         );
-
         y += 30;
 
         canvas.drawText("Jármű adatai:", MARGIN, y, boldPaint);
@@ -99,49 +92,37 @@ public class PdfExporter {
 
         canvas.drawText(
                 "Gyártó: " + car.getManufacturer(),
-                MARGIN,
-                y,
-                paint
+                MARGIN, y, paint
         );
         y += 18;
 
         canvas.drawText(
                 "Modell: " + car.getModel(),
-                MARGIN,
-                y,
-                paint
+                MARGIN, y, paint
         );
         y += 18;
 
         canvas.drawText(
                 "Rendszám: " + car.getLicensePlate(),
-                MARGIN,
-                y,
-                paint
+                MARGIN, y, paint
         );
         y += 18;
 
         canvas.drawText(
                 "Gyártási év: " + car.getProductionYear(),
-                MARGIN,
-                y,
-                paint
+                MARGIN, y, paint
         );
         y += 30;
 
         canvas.drawText(
                 "Szervizösszesítés:",
-                MARGIN,
-                y,
-                boldPaint
+                MARGIN, y, boldPaint
         );
         y += 20;
 
         canvas.drawText(
                 "Bejegyzések száma: " + entries.size(),
-                MARGIN,
-                y,
-                paint
+                MARGIN, y, paint
         );
         y += 18;
 
@@ -153,17 +134,13 @@ public class PdfExporter {
         canvas.drawText(
                 "Összes költség: "
                         + formatter.format(totalCost) + " Ft",
-                MARGIN,
-                y,
-                paint
+                MARGIN, y, paint
         );
         y += 30;
 
         canvas.drawText(
                 "Szervizbejegyzések:",
-                MARGIN,
-                y,
-                boldPaint
+                MARGIN, y, boldPaint
         );
         y += 25;
 
@@ -201,11 +178,8 @@ public class PdfExporter {
 
                 canvas.drawText(
                         "DigitService - Szerviztörténet",
-                        MARGIN,
-                        y,
-                        boldPaint
+                        MARGIN, y, boldPaint
                 );
-
                 y += 30;
             }
 
@@ -213,18 +187,13 @@ public class PdfExporter {
                     entry.getEntryName() == null
                             ? "Szervizbejegyzés"
                             : entry.getEntryName(),
-                    MARGIN,
-                    y,
-                    boldPaint
+                    MARGIN, y, boldPaint
             );
-
             y += 20;
 
             canvas.drawText(
                     "Dátum: " + entry.getServiceDate(),
-                    MARGIN,
-                    y,
-                    paint
+                    MARGIN, y, paint
             );
             y += 17;
 
@@ -232,9 +201,7 @@ public class PdfExporter {
                     "Kilométeróra: "
                             + formatter.format(entry.getMileage())
                             + " km",
-                    MARGIN,
-                    y,
-                    paint
+                    MARGIN, y, paint
             );
             y += 17;
 
@@ -242,9 +209,7 @@ public class PdfExporter {
                     "Költség: "
                             + formatter.format(entry.getCost())
                             + " Ft",
-                    MARGIN,
-                    y,
-                    paint
+                    MARGIN, y, paint
             );
             y += 17;
 
@@ -253,11 +218,8 @@ public class PdfExporter {
 
                 canvas.drawText(
                         "Leírás: " + entry.getDescription(),
-                        MARGIN,
-                        y,
-                        paint
+                        MARGIN, y, paint
                 );
-
                 y += 20;
             }
 
@@ -278,70 +240,92 @@ public class PdfExporter {
                     continue;
                 }
 
-                Bitmap bitmap = BitmapFactory.decodeFile(
-                        imageFile.getAbsolutePath()
-                );
+                int maxWidth = PAGE_WIDTH - 2 * MARGIN;
+                int maxHeight = 180;
 
-                if (bitmap == null) {
-                    continue;
-                }
+                FutureTarget<Bitmap> target =
+                        Glide.with(context.getApplicationContext())
+                                .asBitmap()
+                                .load(imageFile)
+                                .fitCenter()
+                                .submit(maxWidth, maxHeight);
 
-                if (y > 620) {
+                try {
+                    Bitmap bitmap = target.get();
 
-                    document.finishPage(page);
+                    if (bitmap == null) {
+                        continue;
+                    }
 
-                    pageNumber++;
+                    if (y > 620) {
 
-                    pageInfo =
-                            new PdfDocument.PageInfo.Builder(
-                                    PAGE_WIDTH,
-                                    PAGE_HEIGHT,
-                                    pageNumber
-                            ).create();
+                        document.finishPage(page);
 
-                    page = document.startPage(pageInfo);
-                    canvas = page.getCanvas();
+                        pageNumber++;
 
-                    y = 55;
+                        pageInfo =
+                                new PdfDocument.PageInfo.Builder(
+                                        PAGE_WIDTH,
+                                        PAGE_HEIGHT,
+                                        pageNumber
+                                ).create();
 
-                    canvas.drawText(
-                            "DigitService - Szerviztörténet",
-                            MARGIN,
-                            y,
-                            boldPaint
+                        page = document.startPage(pageInfo);
+                        canvas = page.getCanvas();
+
+                        y = 55;
+
+                        canvas.drawText(
+                                "DigitService - Szerviztörténet",
+                                MARGIN, y, boldPaint
+                        );
+                        y += 30;
+                    }
+
+                    float scale = Math.min(
+                            (float) maxWidth / bitmap.getWidth(),
+                            (float) maxHeight / bitmap.getHeight()
                     );
 
-                    y += 30;
+                    float width = bitmap.getWidth() * scale;
+                    float height = bitmap.getHeight() * scale;
+
+                    RectF destination = new RectF(
+                            MARGIN,
+                            y,
+                            MARGIN + width,
+                            y + height
+                    );
+
+                    canvas.drawBitmap(
+                            bitmap,
+                            null,
+                            destination,
+                            paint
+                    );
+
+                    y += (int) height + 15;
+
+                } catch (InterruptedException e) {
+
+                    Thread.currentThread().interrupt();
+
+                    throw new IOException(
+                            "A kép betöltése megszakadt.",
+                            e
+                    );
+
+                } catch (ExecutionException e) {
+
+                    throw new IOException(
+                            "Nem sikerült betölteni a képet.",
+                            e
+                    );
+
+                } finally {
+                    Glide.with(context.getApplicationContext())
+                            .clear(target);
                 }
-
-                float maxWidth = PAGE_WIDTH - 2 * MARGIN;
-                float maxHeight = 180;
-
-                float scale = Math.min(
-                        maxWidth / bitmap.getWidth(),
-                        maxHeight / bitmap.getHeight()
-                );
-
-                float width = bitmap.getWidth() * scale;
-                float height = bitmap.getHeight() * scale;
-
-                RectF destination = new RectF(
-                        MARGIN,
-                        y,
-                        MARGIN + width,
-                        y + height
-                );
-
-                canvas.drawBitmap(
-                        bitmap,
-                        null,
-                        destination,
-                        paint
-                );
-
-                y += (int) height + 15;
-
-                bitmap.recycle();
             }
 
             y += 20;
@@ -356,6 +340,7 @@ public class PdfExporter {
 
         if (!exportDir.exists() && !exportDir.mkdirs()) {
             document.close();
+
             throw new IOException(
                     "Nem sikerült létrehozni az export mappát."
             );
