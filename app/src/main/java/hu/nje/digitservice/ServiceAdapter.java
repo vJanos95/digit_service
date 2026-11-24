@@ -1,10 +1,7 @@
-
 package hu.nje.digitservice;
 
 import android.app.Dialog;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,6 +14,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -77,6 +76,16 @@ public class ServiceAdapter extends RecyclerView.Adapter<ServiceAdapter.ServiceV
                 String.format(Locale.getDefault(), "%,d Ft", entry.getCost())
         );
 
+        Context context = holder.itemView.getContext();
+
+        for (int i = 0; i < holder.imagesContainer.getChildCount(); i++) {
+            View child = holder.imagesContainer.getChildAt(i);
+
+            if (child instanceof ImageView) {
+                Glide.with(holder.itemView).clear((ImageView) child);
+            }
+        }
+
         holder.imagesContainer.removeAllViews();
 
         List<ServiceImage> images =
@@ -89,9 +98,8 @@ public class ServiceAdapter extends RecyclerView.Adapter<ServiceAdapter.ServiceV
 
         holder.imagesScroll.setVisibility(View.VISIBLE);
 
-        Context context = holder.itemView.getContext();
-
         for (ServiceImage serviceImage : images) {
+
             File imageFile = new File(
                     new File(context.getFilesDir(), "service_images"),
                     serviceImage.getFileName()
@@ -117,15 +125,11 @@ public class ServiceAdapter extends RecyclerView.Adapter<ServiceAdapter.ServiceV
             imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
             imageView.setContentDescription("Szervizhez csatolt kép");
 
-            Bitmap preview = decodeSampledBitmap(
-                    imageFile.getAbsolutePath(),
-                    imageSize,
-                    imageSize
-            );
-
-            if (preview != null) {
-                imageView.setImageBitmap(preview);
-            }
+            Glide.with(holder.itemView)
+                    .load(imageFile)
+                    .override(imageSize, imageSize)
+                    .centerCrop()
+                    .into(imageView);
 
             imageView.setOnClickListener(v ->
                     showFullImage(context, imageFile)
@@ -145,6 +149,7 @@ public class ServiceAdapter extends RecyclerView.Adapter<ServiceAdapter.ServiceV
     }
 
     private void showFullImage(Context context, File imageFile) {
+
         if (!imageFile.exists()) {
             return;
         }
@@ -161,17 +166,6 @@ public class ServiceAdapter extends RecyclerView.Adapter<ServiceAdapter.ServiceV
                         .getDisplayMetrics().heightPixels * 0.8f
         );
 
-        Bitmap bitmap = decodeSampledBitmap(
-                imageFile.getAbsolutePath(),
-                maxWidth,
-                maxHeight
-        );
-
-        if (bitmap == null) {
-            return;
-        }
-
-        imageView.setImageBitmap(bitmap);
         imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
         imageView.setAdjustViewBounds(true);
         imageView.setMaxWidth(maxWidth);
@@ -191,10 +185,15 @@ public class ServiceAdapter extends RecyclerView.Adapter<ServiceAdapter.ServiceV
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
             );
+
             window.setGravity(Gravity.CENTER);
         }
 
         imageView.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.setOnDismissListener(d ->
+                Glide.with(context).clear(imageView)
+        );
 
         dialog.show();
 
@@ -204,51 +203,12 @@ public class ServiceAdapter extends RecyclerView.Adapter<ServiceAdapter.ServiceV
                     ViewGroup.LayoutParams.WRAP_CONTENT
             );
         }
-    }
 
-    private Bitmap decodeSampledBitmap(
-            String path,
-            int requestedWidth,
-            int requestedHeight
-    ) {
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-
-        BitmapFactory.decodeFile(path, options);
-
-        if (options.outWidth <= 0 || options.outHeight <= 0) {
-            return null;
-        }
-
-        options.inSampleSize = calculateInSampleSize(
-                options,
-                requestedWidth,
-                requestedHeight
-        );
-
-        options.inJustDecodeBounds = false;
-
-        return BitmapFactory.decodeFile(path, options);
-    }
-
-    private int calculateInSampleSize(
-            BitmapFactory.Options options,
-            int requestedWidth,
-            int requestedHeight
-    ) {
-        int height = options.outHeight;
-        int width = options.outWidth;
-
-        int sampleSize = 1;
-
-        while (
-                height / sampleSize > requestedHeight * 2 ||
-                        width / sampleSize > requestedWidth * 2
-        ) {
-            sampleSize *= 2;
-        }
-
-        return sampleSize;
+        Glide.with(context)
+                .load(imageFile)
+                .override(maxWidth, maxHeight)
+                .fitCenter()
+                .into(imageView);
     }
 
     private int dpToPx(Context context, int dp) {
